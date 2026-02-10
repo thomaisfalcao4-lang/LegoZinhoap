@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LEGO Zinho</title>
+
+<style>
+body {
+  margin: 0;
+  overflow: hidden;
+  background: #000;
+  font-family: Arial, sans-serif;
+  /* Forçar orientação landscape */
+  transform-origin: top left;
+}
+
+/* ===== TOPO PRETO ===== */
+#top {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #111;
+  padding: 12px;
+  z-index: 10;
+}
+
+/* ABA BRANCA */
+#panel {
+  background: #fff;
+  padding: 8px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+/* PREVIEW */
+#preview {
+  border-radius: 4px;
+}
+
+/* CORES EM LINHA COM SCROLL */
+#colors-section {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 8px 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+#colors-section::-webkit-scrollbar {
+  height: 6px;
+}
+
+#colors-section::-webkit-scrollbar-track {
+  background: #222;
+  border-radius: 3px;
+}
+
+#colors-section::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 3px;
+}
+
+.color {
+  min-width: 45px;
+  width: 45px;
+  height: 45px;
+  border-radius: 50%;
+  border: 3px solid #fff;
+  cursor: pointer;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+
+.color:active {
+  transform: scale(0.9);
+}
+
+.color.selected {
+  border-color: #ffcc00;
+  box-shadow: 0 0 10px #ffcc00;
+}
+
+/* BOTÕES DE AÇÃO */
+#actions-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+button {
+  font-size: 16px;
+  cursor: pointer;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #4CAF50;
+  color: white;
+  font-weight: bold;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+button:active {
+  background: #45a049;
+}
+
+#fix-btn {
+  background: #FF9800;
+}
+
+#fix-btn:active {
+  background: #e68900;
+}
+
+#delete-btn {
+  background: #f44336;
+  display: none;
+}
+
+#delete-btn:active {
+  background: #da190b;
+}
+
+#done-btn {
+  background: #2196F3;
+  display: none;
+}
+
+#done-btn:active {
+  background: #0b7dda;
+}
+
+#gallery-btn {
+  background: #9C27B0;
+}
+
+#gallery-btn:active {
+  background: #7B1FA2;
+}
+
+/* BOTÃO GIRAR - CANTO INFERIOR DIREITO */
+#rotate-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: #9C27B0;
+  font-size: 32px;
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+  border: 3px solid #fff;
+  padding: 0;
+}
+
+#rotate-btn:active {
+  background: #7B1FA2;
+}
+
+/* ÁREA DO JOGO */
+#game {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  touch-action: none;
+}
+
+/* Indicador de modo */
+#mode-indicator {
+  position: fixed;
+  top: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 150, 255, 0.9);
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  display: none;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+/* GALERIA */
+#gallery {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
+  z-index: 1000;
+  display: none;
+  overflow-y: auto;
+  padding: 20px;
+}
+
+#gallery-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  color: white;
+}
+
+#gallery-header h2 {
+  margin: 0;
+}
+
+#close-gallery {
+  background: #f44336;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+#gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.gallery-item {
+  background: #222;
+  border-radius: 12px;
+  padding: 15px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.gallery-item:hover {
+  transform: scale(1.05);
+}
+
+.gallery-item img {
+  width: 100%;
+  height: 200px;
+  border-radius: 8px;
+  background: #87ceeb;
+  object-fit: cover;
+}
+
+.gallery-info {
+  color: white;
+  margin-top: 10px;
+}
+
+.gallery-info p {
+  margin: 5px 0;
+}
+
+/* Modal de nome */
+#name-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  z-index: 2000;
+  display: none;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  max-width: 90%;
+  width: 400px;
+}
+
+#name-modal h3 {
+  margin-top: 0;
+}
+
+#name-modal input {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  margin: 10px 0;
+  box-sizing: border-box;
+}
+
+#name-modal button {
+  width: 100%;
+  margin-top: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<!-- UI TOPO -->
+<div id="top">
+  <div id="panel">
+    <input id="size" value="2x2" style="width:60px; padding: 8px; font-size: 14px;">
+    <div id="preview"></div>
+    <button id="gallery-btn" onclick="openGallery()">🖼️ Galeria</button>
+  </div>
+  
+  <!-- CORES COM SCROLL HORIZONTAL -->
+  <div id="colors-section">
+    <div class="color selected" style="background:#ff0000" onclick="setColor(0xff0000, this)"></div>
+    <div class="color" style="background:#0000ff" onclick="setColor(0x0000ff, this)"></div>
+    <div class="color" style="background:#ffff00" onclick="setColor(0xffff00, this)"></div>
+    <div class="color" style="background:#00ff00" onclick="setColor(0x00ff00, this)"></div>
+    <div class="color" style="background:#ff8800" onclick="setColor(0xff8800, this)"></div>
+    <div class="color" style="background:#ff00ff" onclick="setColor(0xff00ff, this)"></div>
+    <div class="color" style="background:#00ffff" onclick="setColor(0x00ffff, this)"></div>
+    <div class="color" style="background:#ffffff" onclick="setColor(0xffffff, this)"></div>
+    <div class="color" style="background:#000000" onclick="setColor(0x000000, this)"></div>
+    <div class="color" style="background:#8b4513" onclick="setColor(0x8b4513, this)"></div>
+    <div class="color" style="background:#808080" onclick="setColor(0x808080, this)"></div>
+    <div class="color" style="background:#ffc0cb" onclick="setColor(0xffc0cb, this)"></div>
+  </div>
+  
+  <!-- BOTÕES DE AÇÃO -->
+  <div id="actions-row">
+    <button onclick="addBlock()">➕ Adicionar</button>
+    <button id="delete-btn" onclick="deleteSelected()">🗑️ Excluir</button>
+    <button id="fix-btn" onclick="toggleFix()">📌 Fixar</button>
+    <button id="done-btn" onclick="finishCreation()">✅ Pronto!</button>
+  </div>
+</div>
+
+<!-- ÁREA DO JOGO -->
+<div id="game"></div>
+
+<!-- BOTÃO GIRAR (CANTO INFERIOR DIREITO) -->
+<button id="rotate-btn" onclick="rotateBlock()">🔄</button>
+
+<div id="mode-indicator">Selecione uma peça</div>
+
+<!-- GALERIA -->
+<div id="gallery">
+  <div id="gallery-header">
+    <h2>🌍 Galeria Global de Criações</h2>
+    <button id="close-gallery" onclick="closeGallery()">✖ Fechar</button>
+  </div>
+  <div id="gallery-grid"></div>
+</div>
+
+<!-- MODAL NOME -->
+<div id="name-modal">
+  <h3>🎨 Dê um nome para sua criação!</h3>
+  <input type="text" id="creation-name" placeholder="Ex: Castelo Medieval, Casa Moderna..." maxlength="50">
+  <button onclick="saveCreation()">💾 Salvar e Compartilhar</button>
+  <button onclick="closeNameModal()" style="background: #999;">Cancelar</button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+
+<script>
+// ===== CENA =====
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x87ceeb);
+
+const game = document.getElementById("game");
+
+const camera = new THREE.PerspectiveCamera(
+  70,
+  game.clientWidth / game.clientHeight,
+  0.1,
+  1000
+);
+camera.position.set(8, 10, 14);
+camera.lookAt(5, 0, 5);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(game.clientWidth, game.clientHeight);
+renderer.shadowMap.enabled = true;
+game.appendChild(renderer.domElement);
+
+// ===== LUZ =====
+scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+const sun = new THREE.DirectionalLight(0xffffff, 0.8);
+sun.position.set(10, 20, 10);
+sun.castShadow = true;
+scene.add(sun);
+
+// ===== CHÃO =====
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(20, 20),
+  new THREE.MeshStandardMaterial({ color: 0x88aa88 })
+);
+ground.rotation.x = -Math.PI / 2;
+ground.position.set(10, 0, 10);
+ground.receiveShadow = true;
+scene.add(ground);
+
+const gridHelper = new THREE.GridHelper(20, 20, 0x666666, 0x888888);
+gridHelper.position.set(10, 0.01, 10);
+scene.add(gridHelper);
+
+// ===== VARIÁVEIS =====
+let selectedColor = 0xff0000;
+let blocks = [];
+let dragged = null;
+let selectedBlock = null;
+let lastTapTime = 0;
+let lastTappedBlock = null;
+let outlineBox = null;
+
+// ===== CRIAR PEÇA LEGO =====
+function createLegoBrick(width, depth, color) {
+  const group = new THREE.Group();
+  
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(width, 0.8, depth),
+    new THREE.MeshStandardMaterial({ 
+      color: color,
+      roughness: 0.4,
+      metalness: 0.1
+    })
+  );
+  body.castShadow = true;
+  body.receiveShadow = true;
+  group.add(body);
+  
+  const studRadius = 0.15;
+  const studHeight = 0.2;
+  const studGeometry = new THREE.CylinderGeometry(studRadius, studRadius, studHeight, 16);
+  const studMaterial = new THREE.MeshStandardMaterial({ 
+    color: color,
+    roughness: 0.3,
+    metalness: 0.1
+  });
+  
+  const cols = Math.floor(width);
+  const rows = Math.floor(depth);
+  
+  for (let x = 0; x < cols; x++) {
+    for (let z = 0; z < rows; z++) {
+      const stud = new THREE.Mesh(studGeometry, studMaterial);
+      stud.position.set(
+        -width/2 + 0.5 + x,
+        0.4 + studHeight/2,
+        -depth/2 + 0.5 + z
+      );
+      stud.castShadow = true;
+      group.add(stud);
+    }
+  }
+  
+  group.userData.width = width;
+  group.userData.depth = depth;
+  group.userData.height = 1;
+  group.userData.locked = false;
+  group.userData.fixed = false;
+  group.userData.color = color;
+  group.userData.rotation = 0;
+  
+  return group;
+}
+
+// ===== OUTLINE =====
+function createOutline(block, color = 0x00ff00) {
+  if (outlineBox) {
+    scene.remove(outlineBox);
+  }
+  
+  const w = block.userData.width;
+  const d = block.userData.depth;
+  const h = block.userData.height;
+  
+  const edges = new THREE.EdgesGeometry(new THREE.BoxGeometry(w + 0.1, h + 0.1, d + 0.1));
+  outlineBox = new THREE.LineSegments(
+    edges,
+    new THREE.LineBasicMaterial({ color: color, linewidth: 3 })
+  );
+  
+  outlineBox.position.copy(block.position);
+  outlineBox.rotation.copy(block.rotation);
+  scene.add(outlineBox);
+}
+
+function removeOutline() {
+  if (outlineBox) {
+    scene.remove(outlineBox);
+    outlineBox = null;
+  }
+}
+
+// ===== PREVIEW =====
+function updatePreview(w, d) {
+  const p = document.getElementById("preview");
+  p.style.width = (w * 10) + "px";
+  p.style.height = (d * 10) + "px";
+  p.style.background = "#" + selectedColor.toString(16).padStart(6, "0");
+}
+updatePreview(2, 2);
+
+function setColor(c, element) {
+  selectedColor = c;
+  const [w, d] = document.getElementById("size").value.split("x");
+  updatePreview(w, d);
+  
+  document.querySelectorAll('.color').forEach(el => el.classList.remove('selected'));
+  element.classList.add('selected');
+}
+
+// ===== ALTURA VÁLIDA =====
+function findValidHeight(block, x, z) {
+  let maxY = 0.5;
+  
+  for (let other of blocks) {
+    if (other === block) continue;
+    
+    const w1 = block.userData.width;
+    const d1 = block.userData.depth;
+    const w2 = other.userData.width;
+    const d2 = other.userData.depth;
+    
+    const dx = Math.abs(x - other.position.x);
+    const dz = Math.abs(z - other.position.z);
+    
+    if (dx < (w1 + w2) / 2 && dz < (d1 + d2) / 2) {
+      const topY = other.position.y + other.userData.height / 2 + block.userData.height / 2;
+      if (topY > maxY) {
+        maxY = topY;
+      }
+    }
+  }
+  
+  return maxY;
+}
+
+// ===== ADICIONAR BLOCO =====
+function addBlock() {
+  const [w, d] = document.getElementById("size").value
+    .split("x")
+    .map(n => parseInt(n));
+
+  updatePreview(w, d);
+
+  const block = createLegoBrick(w, d, selectedColor);
+  block.position.set(10, 0.5, 10);
+  
+  scene.add(block);
+  blocks.push(block);
+  
+  updateUI();
+}
+
+// ===== GIRAR PEÇA =====
+function rotateBlock() {
+  if (selectedBlock) {
+    selectedBlock.rotation.y += Math.PI / 2;
+    selectedBlock.userData.rotation = (selectedBlock.userData.rotation + 90) % 360;
+    
+    const temp = selectedBlock.userData.width;
+    selectedBlock.userData.width = selectedBlock.userData.depth;
+    selectedBlock.userData.depth = temp;
+    
+    if (outlineBox) {
+      createOutline(selectedBlock, selectedBlock.userData.fixed ? 0xffcc00 : 0x00ff00);
+    }
+  }
+}
+
+// ===== FIXAR PEÇA =====
+function toggleFix() {
+  if (selectedBlock) {
+    selectedBlock.userData.fixed = !selectedBlock.userData.fixed;
+    
+    if (selectedBlock.userData.fixed) {
+      createOutline(selectedBlock, 0xffcc00);
+    } else {
+      createOutline(selectedBlock, 0x00ff00);
+    }
+    
+    updateUI();
+  }
+}
+
+// ===== EXCLUIR =====
+function deleteSelected() {
+  if (selectedBlock) {
+    scene.remove(selectedBlock);
+    blocks = blocks.filter(b => b !== selectedBlock);
+    removeOutline();
+    selectedBlock = null;
+    dragged = null;
+    updateUI();
+  }
+}
+
+// ===== ATUALIZAR UI =====
+function updateUI() {
+  const deleteBtn = document.getElementById('delete-btn');
+  const rotateBtn = document.getElementById('rotate-btn');
+  const doneBtn = document.getElementById('done-btn');
+  const modeIndicator = document.getElementById('mode-indicator');
+  const fixBtn = document.getElementById('fix-btn');
+  
+  if (selectedBlock) {
+    deleteBtn.style.display = 'block';
+    rotateBtn.style.display = 'flex';
+    modeIndicator.style.display = 'block';
+    
+    if (selectedBlock.userData.fixed) {
+      modeIndicator.innerHTML = '📌 Peça FIXADA - Ainda pode mover e girar';
+      modeIndicator.style.background = 'rgba(255, 200, 0, 0.9)';
+      fixBtn.innerHTML = '📌 Desfixar';
+    } else if (selectedBlock.userData.locked) {
+      modeIndicator.innerHTML = '🔓 Modo Edição - Arraste e gire livremente';
+      modeIndicator.style.background = 'rgba(0, 200, 0, 0.9)';
+      fixBtn.innerHTML = '📌 Fixar';
+    } else {
+      modeIndicator.innerHTML = '🔒 Clique duplo para editar';
+      modeIndicator.style.background = 'rgba(255, 150, 0, 0.9)';
+      fixBtn.innerHTML = '📌 Fixar';
+    }
+  } else {
+    deleteBtn.style.display = 'none';
+    rotateBtn.style.display = 'none';
+    modeIndicator.style.display = 'none';
+  }
+  
+  if (blocks.length >= 5) {
+    doneBtn.style.display = 'block';
+  } else {
+    doneBtn.style.display = 'none';
+  }
+}
+
+// ===== FINALIZAR CRIAÇÃO =====
+function finishCreation() {
+  document.getElementById('name-modal').style.display = 'block';
+}
+
+function closeNameModal() {
+  document.getElementById('name-modal').style.display = 'none';
+}
+
+// ===== SALVAR CRIAÇÃO =====
+function saveCreation() {
+  const name = document.getElementById('creation-name').value.trim();
+  
+  if (!name) {
+    alert('Por favor, dê um nome para sua criação!');
+    return;
+  }
+  
+  renderer.render(scene, camera);
+  const screenshot = renderer.domElement.toDataURL('image/png');
+  
+  const pieces = blocks.map(b => ({
+    position: {x: b.position.x, y: b.position.y, z: b.position.z},
+    rotation: b.userData.rotation,
+    width: b.userData.width,
+    depth: b.userData.depth,
+    color: b.userData.color
+  }));
+  
+  const creation = {
+    id: Date.now(),
+    name: name,
+    screenshot: screenshot,
+    pieces: pieces,
+    pieceCount: blocks.length,
+    date: new Date().toLocaleString('pt-BR')
+  };
+  
+  let creations = JSON.parse(localStorage.getItem('legoCreations') || '[]');
+  creations.unshift(creation);
+  localStorage.setItem('legoCreations', JSON.stringify(creations));
+  
+  closeNameModal();
+  alert('✅ Criação salva! Veja na galeria.');
+  openGallery();
+}
+
+// ===== GALERIA =====
+function openGallery() {
+  const gallery = document.getElementById('gallery');
+  const grid = document.getElementById('gallery-grid');
+  
+  gallery.style.display = 'block';
+  grid.innerHTML = '';
+  
+  const creations = JSON.parse(localStorage.getItem('legoCreations') || '[]');
+  
+  if (creations.length === 0) {
+    grid.innerHTML = '<p style="color: white; grid-column: 1/-1; text-align: center;">Nenhuma criação ainda. Seja o primeiro!</p>';
+    return;
+  }
+  
+  creations.forEach(creation => {
+    const item = document.createElement('div');
+    item.className = 'gallery-item';
+    item.onclick = () => loadCreation(creation);
+    
+    item.innerHTML = `
+      <img src="${creation.screenshot}" style="width: 100%; height: 200px; object-fit: cover; border-radius: 8px;">
+      <div class="gallery-info">
+        <p><strong>${creation.name}</strong></p>
+        <p>🧱 ${creation.pieceCount} peças</p>
+        <p>📅 ${creation.date}</p>
+      </div>
+    `;
+    
+    grid.appendChild(item);
+  });
+}
+
+function closeGallery() {
+  document.getElementById('gallery').style.display = 'none';
+}
+
+function loadCreation(creation) {
+  blocks.forEach(b => scene.remove(b));
+  blocks = [];
+  
+  creation.pieces.forEach(p => {
+    const block = createLegoBrick(p.width, p.depth, p.color);
+    block.position.set(p.position.x, p.position.y, p.position.z);
+    
+    if (p.rotation) {
+      block.rotation.y = (p.rotation * Math.PI) / 180;
+      block.userData.rotation = p.rotation;
+    }
+    
+    scene.add(block);
+    blocks.push(block);
+  });
+  
+  closeGallery();
+  updateUI();
+}
+
+// ===== CONTROLE DE CÂMERA =====
+let cameraAngle = 0;
+let cameraDistance = 18;
+let cameraPitch = 0.6;
+let lastTouchX = 0;
+let lastTouchY = 0;
+let isCameraRotating = false;
+
+function updateCamera() {
+  const centerX = 10;
+  const centerZ = 10;
+  
+  camera.position.x = centerX + Math.cos(cameraAngle) * cameraDistance * Math.cos(cameraPitch);
+  camera.position.z = centerZ + Math.sin(cameraAngle) * cameraDistance * Math.cos(cameraPitch);
+  camera.position.y = Math.sin(cameraPitch) * cameraDistance;
+  
+  camera.lookAt(centerX, 2, centerZ);
+}
+
+// ===== TOQUE / ARRASTAR =====
+const raycaster = new THREE.Raycaster();
+const touch = new THREE.Vector2();
+
+window.addEventListener("touchstart", e => {
+  const touchX = e.touches[0].clientX;
+  const touchY = e.touches[0].clientY;
+  
+  lastTouchX = touchX;
+  lastTouchY = touchY;
+  
+  const topElement = document.getElementById('top');
+  const topHeight = topElement.offsetHeight;
+  
+  if (touchY > topHeight) {
+    touch.x = (touchX / innerWidth) * 2 - 1;
+    touch.y = -(touchY / innerHeight) * 2 + 1;
+    raycaster.setFromCamera(touch, camera);
+
+    const hit = raycaster.intersectObjects(blocks, true);
+    
+    if (hit.length) {
+      const tappedBlock = hit[0].object.parent.type === "Group" ? hit[0].object.parent : hit[0].object;
+      
+      const currentTime = Date.now();
+      const timeSinceLastTap = currentTime - lastTapTime;
+      
+      if (timeSinceLastTap < 300 && tappedBlock === lastTappedBlock) {
+        tappedBlock.userData.locked = !tappedBlock.userData.locked;
+        
+        if (tappedBlock.userData.locked) {
+          selectedBlock = tappedBlock;
+          dragged = tappedBlock;
+          createOutline(tappedBlock, tappedBlock.userData.fixed ? 0xffcc00 : 0x00ff00);
+        } else {
+          createOutline(tappedBlock, 0xff9900);
+        }
+        
+        updateUI();
+        lastTapTime = 0;
+        lastTappedBlock = null;
+      } else {
+        lastTapTime = currentTime;
+        lastTappedBlock = tappedBlock;
+        selectedBlock = tappedBlock;
+        
+        if (tappedBlock.userData.locked) {
+          dragged = tappedBlock;
+          createOutline(tappedBlock, tappedBlock.userData.fixed ? 0xffcc00 : 0x00ff00);
+        } else {
+          createOutline(tappedBlock, 0xff9900);
+        }
+        
+        updateUI();
+      }
+    } else {
+      isCameraRotating = true;
+         selectedBlock = null;
+      dragged = null;
+      removeOutline();
+      updateUI();
+    }
+  }
+});
+
+window.addEventListener("touchmove", e => {
+  e.preventDefault();
+  
+  const touchX = e.touches[0].clientX;
+  const touchY = e.touches[0].clientY;
+  
+  if (dragged && dragged.userData.locked) {
+    touch.x = (touchX / innerWidth) * 2 - 1;
+    touch.y = -(touchY / innerHeight) * 2 + 1;
+    raycaster.setFromCamera(touch, camera);
+
+    const hit = raycaster.intersectObject(ground);
+    if (hit.length) {
+      const newX = Math.round(hit[0].point.x);
+      const newZ = Math.round(hit[0].point.z);
+      const newY = findValidHeight(dragged, newX, newZ);
+      
+      dragged.position.x = newX;
+      dragged.position.z = newZ;
+      dragged.position.y = newY;
+      
+      if (outlineBox) {
+        outlineBox.position.copy(dragged.position);
+      }
+    }
+  } else if (isCameraRotating) {
+    const deltaX = touchX - lastTouchX;
+    const deltaY = touchY - lastTouchY;
+    
+    cameraAngle -= deltaX * 0.01;
+    cameraPitch = Math.max(0.2, Math.min(1.4, cameraPitch + deltaY * 0.005));
+    
+    updateCamera();
+  }
+  
+  lastTouchX = touchX;
+  lastTouchY = touchY;
+});
+
+window.addEventListener("touchend", () => {
+  isCameraRotating = false;
+});
+
+// ===== ZOOM =====
+let initialDistance = 0;
+
+window.addEventListener("touchstart", e => {
+  if (e.touches.length === 2) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    initialDistance = Math.sqrt(dx * dx + dy * dy);
+    isCameraRotating = false;
+  }
+});
+
+window.addEventListener("touchmove", e => {
+  if (e.touches.length === 2) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+    
+    const delta = initialDistance - distance;
+    cameraDistance = Math.max(10, Math.min(30, cameraDistance + delta * 0.05));
+    initialDistance = distance;
+    
+    updateCamera();
+  }
+});
+
+// ===== LOOP =====
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
+animate();
+
+// ===== RESIZE =====
+window.addEventListener("resize", () => {
+  const w = game.clientWidth;
+  const h = game.clientHeight;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+});
+</script>
+<!-- MÚSICA DE FUNDO -->
+<audio id="background-music" loop autoplay>
+  <source src="https://cdn.pixabay.com/audio/2024/03/18/audio_c63ec09c6c.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+</body>
+</html>
